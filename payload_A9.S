@@ -76,5 +76,7 @@ _find_zero_loop:
 	ldp x29, x30, [sp], #0x10
 	ret
 
+.align 4
 PWND_STR:
 .asciz " PWND:[checkm8]"
+
