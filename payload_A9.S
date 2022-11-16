@@ -25,8 +25,11 @@
 .set usb_create_string_descriptor,        0x7FFFFFF6
 .set usb_serial_number_string_descriptor, 0x7FFFFFF7
 .set ttbr0_vrom_addr,                     0x7FFFFFF8
-.set patch_addr,                          0x7FFFFFF9
-.set total_received,                      0x7FFFFFFA
+.set sig_patch_addr0,                     0x7FFFFFF9
+.set sig_patch_addr1,                     0x7FFFFFFA
+.set sig_patch_addr2,                     0x7FFFFFFB
+.set sig_patch_addr3,                     0x7FFFFFFC
+.set total_received,                      0x7FFFFFFD
 
 .global _main
 _main:
@@ -54,23 +57,52 @@ _find_zero_loop:
 	blr x1
 	ldr x1, =usb_serial_number_string_descriptor
 	strb w0, [x1]
+
+        ; disable interrupts
+
+        msr     daifset, #0x3
+        isb
+
 	ldr x0, =ttbr0_vrom_addr
 	ldr x1, [x0]
 	bic x1, x1, #0xC0
 	str x1, [x0]
+
+        ; flush page table
 	dsb sy
 	tlbi alle3
 	dsb sy
 	isb
-	mov w2, #0xD2800000
-	ldr x3, =patch_addr
+
+        ; nop
+        mov w2, #0x201f
+        movk w2, #0xd503, lsl #16
+
+	ldr x3, =sig_patch_addr_0
 	str w2, [x3]
+
+        ldr x3, =sig_patch_addr_1
+        str w2, [x3]
+
+        ldr x3, =sig_patch_addr_2
+        str w2, [x3]
+
+        ldr x3, =sig_patch_addr_3
+        str w2, [x3]
+
 	orr x1, x1, #0x80
 	str x1, [x0]
+
+        ; flush page table
 	dsb sy
 	tlbi alle3
 	dsb sy
 	isb
+
+        ; enable interupts
+        msr     daifclr, #0x3
+        isb
+
 	ldr x0, =total_received
 	str wzr, [x0]
 	ldp x29, x30, [sp], #0x10
